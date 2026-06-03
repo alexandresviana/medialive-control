@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MediaLive Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0c10;
+    --panel: #12151c;
+    --panel-2: #171b24;
+    --border: #232936;
+    --text: #e6e9ef;
+    --muted: #8b94a7;
+    --accent: #4ade80;
+    --running: #22c55e;
+    --idle: #6b7280;
+    --transition: #f59e0b;
+    --error: #ef4444;
+    --mono: "IBM Plex Mono", monospace;
+    --sans: "IBM Plex Sans", sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #15202e 0%, transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 32px 24px 64px;
+  }
+
+  .wrap { max-width: 960px; margin: 0 auto; }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .dot-live {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--running);
+    box-shadow: 0 0 0 0 rgba(34,197,94,.6);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(34,197,94,.55); }
+    70% { box-shadow: 0 0 0 10px rgba(34,197,94,0); }
+    100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+  }
+  h1 {
+    font-size: 20px; font-weight: 700; letter-spacing: -.01em;
+  }
+  h1 span { color: var(--muted); font-weight: 400; }
+
+  .meta {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    display: flex; gap: 18px; align-items: center;
+  }
+  .meta b { color: var(--text); font-weight: 500; }
+
+  .toolbar {
+    display: flex; gap: 10px; align-items: center;
+    margin-bottom: 18px; flex-wrap: wrap;
+  }
+  .btn-refresh {
+    background: var(--panel-2); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--mono); font-size: 12px;
+    padding: 8px 14px; border-radius: 8px; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .btn-refresh:hover { border-color: var(--muted); }
+  .auto { font-family: var(--mono); font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+
+  .grid { display: flex; flex-direction: column; gap: 12px; }
+
+  .card {
+    background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: center;
+  }
+  .card-info { min-width: 0; }
+  .card-name { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+  .card-sub {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    margin-top: 6px; display: flex; gap: 16px; flex-wrap: wrap;
+  }
+
+  .badge {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .06em;
+    padding: 4px 10px; border-radius: 6px; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .badge.running { color: var(--running); background: rgba(34,197,94,.1); }
+  .badge.idle    { color: var(--idle);    background: rgba(107,114,128,.12); }
+  .badge.transition { color: var(--transition); background: rgba(245,158,11,.1); }
+  .badge.transition::before { animation: blink 1s steps(2) infinite; }
+  .badge.error   { color: var(--error);   background: rgba(239,68,68,.1); }
+  @keyframes blink { 50% { opacity: .25; } }
+
+  .actions { display: flex; gap: 10px; }
+  .btn {
+    font-family: var(--sans); font-size: 13px; font-weight: 600;
+    padding: 9px 18px; border-radius: 8px; cursor: pointer;
+    border: 1px solid transparent; transition: all .15s; white-space: nowrap;
+  }
+  .btn:disabled { opacity: .35; cursor: not-allowed; }
+  .btn-start { background: rgba(34,197,94,.12); color: var(--running); border-color: rgba(34,197,94,.3); }
+  .btn-start:not(:disabled):hover { background: rgba(34,197,94,.22); }
+  .btn-stop  { background: rgba(239,68,68,.1); color: var(--error); border-color: rgba(239,68,68,.3); }
+  .btn-stop:not(:disabled):hover { background: rgba(239,68,68,.2); }
+
+  .empty, .loading {
+    text-align: center; color: var(--muted); padding: 60px 20px;
+    font-family: var(--mono); font-size: 13px;
+  }
+  .err-box {
+    background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.3);
+    color: #fca5a5; border-radius: 10px; padding: 16px 18px;
+    font-family: var(--mono); font-size: 13px; margin-bottom: 18px;
+  }
+
+  /* modal de confirmacao */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    display: none; align-items: center; justify-content: center; padding: 20px; z-index: 50;
+  }
+  .overlay.show { display: flex; }
+  .modal {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; padding: 28px; max-width: 420px; width: 100%;
+  }
+  .modal h3 { font-size: 17px; margin-bottom: 10px; }
+  .modal p { color: var(--muted); font-size: 14px; line-height: 1.5; margin-bottom: 22px; }
+  .modal p b { color: var(--text); }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn-cancel { background: var(--panel-2); border-color: var(--border); color: var(--text); }
+
+  @media (max-width: 560px) {
+    .card { grid-template-columns: 1fr; }
+    .actions { justify-content: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="dot-live"></div>
+      <h1>MediaLive Control <span>/ painel de operação</span></h1>
+    </div>
+    <div class="meta">
+      <span>região <b id="region">—</b></span>
+      <span>atualizado <b id="lastUpdate">—</b></span>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <button class="btn-refresh" id="refreshBtn">↻ atualizar agora</button>
+    <label class="auto"><input type="checkbox" id="autoToggle" checked /> auto-refresh 8s</label>
+  </div>
+
+  <div id="errBox"></div>
+  <div class="grid" id="grid">
+    <div class="loading">carregando canais…</div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 id="modalTitle">Parar canal?</h3>
+    <p id="modalText"></p>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" id="modalCancel">Cancelar</button>
+      <button class="btn btn-stop" id="modalConfirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const grid = document.getElementById("grid");
+  const errBox = document.getElementById("errBox");
+  const regionEl = document.getElementById("region");
+  const lastUpdateEl = document.getElementById("lastUpdate");
+  const autoToggle = document.getElementById("autoToggle");
+  const overlay = document.getElementById("overlay");
+
+  let timer = null;
+  let pendingAction = null;
+
+  const TRANSITION = ["STARTING", "STOPPING", "RECOVERING", "CREATING", "DELETING", "UPDATING"];
+
+  function badgeClass(state) {
+    if (state === "RUNNING") return "running";
+    if (state === "IDLE") return "idle";
+    if (TRANSITION.includes(state)) return "transition";
+    return "error";
+  }
+
+  async function api(path, method = "GET") {
+    // Evita falha quando a pagina foi aberta com user:pass@ no URL (bloqueio do fetch).
+    const url = new URL(path, `${window.location.protocol}//${window.location.host}`);
+    const res = await fetch(url.toString(), { method });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error || "Erro");
+    return data;
+  }
+
+  function render(channels) {
+    errBox.innerHTML = "";
+    if (!channels.length) {
+      grid.innerHTML = '<div class="empty">Nenhum canal MediaLive encontrado nesta região.</div>';
+      return;
+    }
+    grid.innerHTML = channels.map((c) => {
+      const cls = badgeClass(c.state);
+      const inTransition = TRANSITION.includes(c.state);
+      const canStart = c.state === "IDLE";
+      const canStop = c.state === "RUNNING";
+      return `
+        <div class="card" data-id="${c.id}">
+          <div class="card-info">
+            <div class="card-name">
+              ${escapeHtml(c.name || "(sem nome)")}
+              <span class="badge ${cls}">${c.state}</span>
+            </div>
+            <div class="card-sub">
+              <span>ID ${c.id}</span>
+              <span>${c.class || "—"}</span>
+              <span>pipelines: ${c.pipelinesRunning ?? 0}</span>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-start" ${canStart ? "" : "disabled"}
+              onclick="startChannel('${c.id}')">▶ Iniciar</button>
+            <button class="btn btn-stop" ${canStop ? "" : "disabled"}
+              onclick="confirmStop('${c.id}','${escapeHtml(c.name || c.id)}')">■ Parar</button>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (m) => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]
+    ));
+  }
+
+  async function load() {
+    try {
+      const data = await api("/api/channels");
+      regionEl.textContent = data.region;
+      render(data.channels);
+      lastUpdateEl.textContent = new Date().toLocaleTimeString("pt-BR");
+    } catch (err) {
+      errBox.innerHTML = `<div class="err-box">Falha ao listar canais: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  async function startChannel(id) {
+    try {
+      await api(`/api/channels/${id}/start`, "POST");
+      await load();
+    } catch (err) {
+      errBox.innerHTML = `<div class="err-box">Não foi possível iniciar: ${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  function confirmStop(id, name) {
+    pendingAction = id;
+    document.getElementById("modalText").innerHTML =
+      `Isso vai <b>encerrar a transmissão ao vivo</b> do canal <b>${escapeHtml(name)}</b>. Tem certeza?`;
+    overlay.classList.add("show");
+  }
+
+  document.getElementById("modalCancel").onclick = () => {
+    overlay.classList.remove("show");
+    pendingAction = null;
+  };
+  document.getElementById("modalConfirm").onclick = async () => {
+    const id = pendingAction;
+    overlay.classList.remove("show");
+    pendingAction = null;
+    if (!id) return;
+    try {
+      await api(`/api/channels/${id}/stop`, "POST");
+      await load();
+    } catch (err) {
+      errBox.innerHTML = `<div class="err-box">Não foi possível parar: ${escapeHtml(err.message)}</div>`;
+    }
+  };
+
+  document.getElementById("refreshBtn").onclick = load;
+
+  function setupAuto() {
+    if (timer) clearInterval(timer);
+    if (autoToggle.checked) timer = setInterval(load, 8000);
+  }
+  autoToggle.onchange = setupAuto;
+
+  load();
+  setupAuto();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "medialive-control",
+  "version": "1.0.0",
+  "description": "Painel web para iniciar/parar canais do AWS Elemental MediaLive",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-medialive": "^3.620.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-basic-auth": "^1.2.1"
+  }
+}

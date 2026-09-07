@@ -11,6 +11,9 @@ import {
   StartChannelCommand,
   StopChannelCommand,
 } from "@aws-sdk/client-medialive";
+import { formatDurationMs } from "./lib/alertCatalog.js";
+import { listEvents } from "./lib/eventStore.js";
+import { syncChannelAlerts } from "./lib/syncAlerts.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -103,6 +106,31 @@ app.post("/api/channels/:id/stop", async (req, res) => {
   } catch (err) {
     console.error("StopChannel:", err);
     res.status(409).json({ error: err.name, message: err.message });
+  }
+});
+
+// Registro de ocorrencias (black/freeze/desconexao/silencio) com inicio e fim
+app.get("/api/channels/:id/events", async (req, res) => {
+  try {
+    const channelId = req.params.id;
+    const limit = Math.min(Number(req.query.limit) || 50, 200);
+
+    await syncChannelAlerts(mediaLive, channelId);
+    const events = await listEvents(channelId, { limit });
+
+    res.json({
+      channelId,
+      events: events.map((ev) => ({
+        ...ev,
+        duration:
+          ev.endedAt && ev.startedAt
+            ? formatDurationMs(Date.parse(ev.endedAt) - Date.parse(ev.startedAt))
+            : null,
+      })),
+    });
+  } catch (err) {
+    console.error("ListEvents:", err);
+    res.status(500).json({ error: err.name, message: err.message });
   }
 });
 

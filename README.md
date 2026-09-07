@@ -41,6 +41,7 @@ Crie uma policy mínima e anexe à Role/usuário que o servidor vai usar:
       "Action": [
         "medialive:ListChannels",
         "medialive:DescribeChannel",
+        "medialive:ListAlerts",
         "medialive:StartChannel",
         "medialive:StopChannel"
       ],

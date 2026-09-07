@@ -8,7 +8,9 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY server.js ./
+COPY lib ./lib
 COPY index.html public/
+RUN mkdir -p /app/data && chown node:node /app/data
 
 EXPOSE 3000
 
